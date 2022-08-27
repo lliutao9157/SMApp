@@ -223,14 +223,10 @@ namespace SMApp
                 case "RedirectResult":
                     var redirectresult = (RedirectResult)actionresult;
                     var url = redirectresult.Url;
-                    Uri uri;
-                    if (!Uri.TryCreate(url, UriKind.Absolute, out uri))
-                    {
-                        url = $"{request.httphead}://{request.Authority}{url}";
-                        Uri.TryCreate(url, UriKind.Absolute, out uri);
-                    }
-                    if (uri == null) throw new Exception("url错误");
-                    res.Redirect(uri.AbsoluteUri);
+                    Regex reg = new Regex(@"^(https://|http://).+");
+                    Match match = reg.Match(url);
+                    if (!match.Success) url = $"{request.httphead}://{request.Authority}{url}";
+                    res.Redirect(url);
                     res.Close();
                     break;
                 case "FileResult":
@@ -291,14 +287,10 @@ namespace SMApp
                 case "RedirectResult":
                     var redirectresult = result.ToObject<RedirectResult>();
                     var url = redirectresult.Url;
-                    Uri uri;
-                    if (!Uri.TryCreate(url, UriKind.Absolute, out uri))
-                    {
-                        url = $"{request.httphead}://{request.Authority}{url}";
-                        Uri.TryCreate(url, UriKind.Absolute, out uri);
-                    }
-                    if (uri == null) throw new Exception("url错误");
-                    res.Redirect(uri.AbsoluteUri);
+                    Regex reg = new Regex(@"^(https://|http://).+");
+                    Match match = reg.Match(url);
+                    if (!match.Success) url = $"{request.httphead}://{request.Authority}{url}";
+                    res.Redirect(url);
                     res.Close();
                     break;
                 case "FileResult":
