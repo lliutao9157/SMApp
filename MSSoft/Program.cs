@@ -23,8 +23,11 @@ namespace MSClient
                     Contenttype = "application/json"
                 };
             };
-            TcpClient.Init("192.168.126.128",10012, "xx", "兴兴");
+            //TcpClient.Init("192.168.126.128",10012, "xx", "兴兴");
             //TcpClient.Init("192.168.31.68", 10012, "xx", "兴兴");
+            TcpClient.Init("118.123.213.90", 10012, "hys", "兴兴");
+
+            
 
             Console.WriteLine("服务运行中...");
             Console.ReadLine();

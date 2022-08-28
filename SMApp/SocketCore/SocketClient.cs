@@ -103,8 +103,9 @@ namespace SMApp
                     client.Send(alldata);
                     return true;
                 }
-                catch
+                catch(Exception e)
                 {
+                    if (OnError != null) OnError(e);
                     return false;
                 }
             });
@@ -117,12 +118,19 @@ namespace SMApp
         }
         public void SendOpenData(byte[] newdata)
         {
-            byte[] sign = new byte[] { 0 };
-            byte[] alldata = new byte[newdata.Length + sign.Length];
-            sign.CopyTo(alldata, 0);
-            newdata.CopyTo(alldata, sign.Length);
-            var buffer = new ArraySegment<byte>(alldata);
-            client.Send(alldata);
+            try
+            {
+                byte[] sign = new byte[] { 0 };
+                byte[] alldata = new byte[newdata.Length + sign.Length];
+                sign.CopyTo(alldata, 0);
+                newdata.CopyTo(alldata, sign.Length);
+                var buffer = new ArraySegment<byte>(alldata);
+                client.Send(alldata);
+            }
+            catch(Exception e)
+            {
+                if (OnError != null) OnError(e);
+            }
         }
         private async void Sendheart()
         {

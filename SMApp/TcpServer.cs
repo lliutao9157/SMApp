@@ -193,12 +193,17 @@ namespace SMApp
                 }
                 var client = TcpServer.ClientList.Find(d => d.ClientId == ClientId && d.Id != Id);
                 if (client != null) TcpServer.ClientList.Remove(client);
+                Console.WriteLine(ClientId+"已加入");
             });
         }
         public override void OnError(Exception e)
         {
             if (e == null) return;
-
+            Console.WriteLine(e.Message);
+        }
+        public override void OnClose()
+        {
+            Console.WriteLine(ClientId+"已退出");
         }
 
     }
