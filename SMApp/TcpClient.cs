@@ -87,7 +87,7 @@ namespace SMApp
         public static void OnError(Exception e)
         {
             if (e == null) return;
-            Console.WriteLine(e.Message);
+            if (Onerror != null) Onerror(e);
         }
         public static void OnHeartError(Exception e)
         {
@@ -119,6 +119,8 @@ namespace SMApp
             isrun = false;
             client.Close();
         }
+
+        public static Action<Exception> Onerror { get; set; }
 
     }
     public class MsgData

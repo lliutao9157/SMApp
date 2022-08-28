@@ -166,6 +166,7 @@ namespace SMApp
             byte[] contents = File.ReadAllBytes(path);
             res.ContentLength64 = contents.LongLength;
             res.ContentType = FileContentType.GetMimeType(result.Result("${type}"));
+            res.Headers.Add("accept-ranges", "bytes");
             res.Close(contents, true);
             return true;
         }

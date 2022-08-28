@@ -18,6 +18,10 @@ namespace MSServer
                 };
             };
             TcpServer.OpenServer(10012);
+            TcpServer.Onerror = e =>
+            {
+                Console.WriteLine(e.Message);
+            };
             Console.WriteLine("服务运行中...");
             Console.ReadLine();
             HttpOnline.Stop();

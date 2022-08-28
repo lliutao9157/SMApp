@@ -199,7 +199,7 @@ namespace SMApp
         public override void OnError(Exception e)
         {
             if (e == null) return;
-            Console.WriteLine(e.Message);
+            if (TcpServer.Onerror != null) OnError(e);
         }
         public override void OnClose()
         {
