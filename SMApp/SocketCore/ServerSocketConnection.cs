@@ -23,7 +23,7 @@ namespace SMApp
         {
 
         }
-        public virtual void OnSenderror(byte[] data, string id)
+        protected virtual void OnSenderror(byte[] data, string id)
         {
 
         }
@@ -35,7 +35,7 @@ namespace SMApp
         {
 
         }
-        public async Task<bool> Send(byte[] newdata, string id = "")
+        protected async Task<bool> Send(byte[] newdata, string id = "")
         {
             var task = Task.Run(async () =>
              {
@@ -61,12 +61,12 @@ namespace SMApp
              });
             return await task;
         }
-        public async Task<bool> Send(string str, string id = "")
+        protected async Task<bool> Send(string str, string id = "")
         {
             var data = Encoding.UTF8.GetBytes(str);
             return await Send(data, id);
         }
-        public async void SendOpenData(byte[] newdata)
+        protected async void SendOpenData(byte[] newdata)
         {
             await Task.Run(() =>
             {

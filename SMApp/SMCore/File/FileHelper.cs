@@ -8,7 +8,7 @@ namespace SMApp
     /// <summary>
     /// 文件及文件夹操作类
     /// </summary>
-    public class FileHelper
+    class FileHelper
     {
         #region 检测指定目录是否存在
         /// <summary>

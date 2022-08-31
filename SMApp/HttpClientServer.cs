@@ -127,14 +127,14 @@ namespace SMApp
                     if (appFiles.Count > 0) httpRequest.appFiles = appFiles;
                     if (ha.Count > 0) httpRequest.appForm = ha;
                 }
-                else if (datatype == "application/json")
+                else if (datatype != null&&datatype.Contains("application/json"))
                 {
                     var jsondata = new byte[request.ContentLength64];
                     request.InputStream.Read(jsondata, 0, jsondata.Length);
                     var jsonstr = Encoding.UTF8.GetString(jsondata);
                     httpRequest.jsondata = jsonstr;
                 }
-                else if (datatype == "application/x-www-form-urlencoded")
+                else if (datatype!=null&&datatype.Contains("application/x-www-form-urlencoded"))
                 {
 
                     var formdata = new byte[request.ContentLength64];
@@ -213,6 +213,9 @@ namespace SMApp
                     res.ContentLength64 = fileresult.Data.Length;
                     res.Close(fileresult.Data, true);
                     break;
+                default:
+
+                    break;
 
             }
 
@@ -232,17 +235,17 @@ namespace SMApp
 
         }
         public static Hashtable Apps { get; set; } = new Hashtable();
-        public static List<AppInfo> AppInfoList { get; set; }
+        private static List<AppInfo> AppInfoList { get; set; }
         private static List<TimeTaskApp> TimeTaskApps { get; set; } = new List<TimeTaskApp>();
         private static List<InitTaskApp> InitTaskApps { get; set; } = new List<InitTaskApp>();
         private static List<CloseTaskApp> CloseTaskApps { get; set; } = new List<CloseTaskApp>();
         public static void Start()
         {
             server.Start();
-            LoadApps();
         }
-        private static void LoadApps()
+        public static void LoadApps(List<AppInfo> appInfos)
         {
+            AppInfoList = appInfos;
             if (AppInfoList == null || AppInfoList.Count == 0) return;
             Apps.Clear();
             TimeTaskApps.Clear();
@@ -251,8 +254,8 @@ namespace SMApp
             foreach (var appinfo in AppInfoList)
             {
                 string path = AppDomain.CurrentDomain.BaseDirectory + appinfo.dllfie;
-                Assembly assembly = Assembly.LoadFile(path);
-                //Assembly assembly = Assembly.Load(appinfo.dllfie);
+                //Assembly assembly = Assembly.LoadFile(path);
+                Assembly assembly = Assembly.Load(appinfo.dllfie);
                 Type instancetype = assembly.GetType(appinfo.instance);
                 var instance = Activator.CreateInstance(instancetype);
                 Apps.Add(appinfo.name, instance);
@@ -418,7 +421,6 @@ namespace SMApp
             List<MethodInfo> methodInfos = fieldtype.GetMethods().ToList();
             WebApiAttribute eapi = null;
             object userinfo = null;
-            int totalindex = 0;
             Hashtable QuryData = new Hashtable();
             if (request.formdata != null)
             {
@@ -473,24 +475,12 @@ namespace SMApp
                 if (plist[i].ParameterType.FullName == null)
                 {
                     object o = null;
-                    if (eapi.WriteUerParam == plist[i].Name) o = JsonConvert.DeserializeObject(userinfo.ToJson());
-                    if (eapi.RetrunTotalParam == plist[i].Name)
-                    {
-                        o = 0;
-                        totalindex = i;
-                    }
                     if (QuryData.ContainsKey(plist[i].Name)) o = JsonConvert.DeserializeObject((QuryData[plist[i].Name]).ToJson());
                     paramlist.Add(o);
                 }
                 else
                 {
                     object o = null;
-                    if (eapi.WriteUerParam == plist[i].Name) o = JsonConvert.DeserializeObject(userinfo.ToJson(), plist[i].ParameterType);
-                    if (eapi.RetrunTotalParam == plist[i].Name)
-                    {
-                        o = 0;
-                        totalindex = i;
-                    }
                     if (QuryData.ContainsKey(plist[i].Name)) o = JsonConvert.DeserializeObject((QuryData[plist[i].Name]).ToJson(), plist[i].ParameterType);
                     if (request.appFiles != null)
                     {

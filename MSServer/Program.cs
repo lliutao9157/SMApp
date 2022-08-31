@@ -13,7 +13,7 @@ namespace MSServer
             {
                 return new HttpError
                 {
-                    msg = new { code = 1, msg = ex.Message }.ToJson(),
+                    msg = ex.Message,
                     Contenttype = "application/json"
                 };
             };

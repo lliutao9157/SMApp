@@ -91,7 +91,7 @@ namespace XX.PD
                 if (logcustomer != null)
                 {
                     LogAttribute loga = (LogAttribute)logcustomer;
-                    var js = invocation.Arguments.ToJson();
+                    
                     var threadid = Thread.CurrentThread.ManagedThreadId.ToString();
                 }
                 invocation.Proceed();

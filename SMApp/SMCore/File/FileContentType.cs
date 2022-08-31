@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SMApp
 {
-    public class FileContentType
+    class FileContentType
     {
         private static IDictionary<string, string> _mappings = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase) {
   

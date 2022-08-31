@@ -3,10 +3,10 @@
     /// <summary>
     /// 缓存操作对外入口
     /// </summary>
-    public class CacheFactory
+     class CacheFactory
     {
         private static ICache _Cashe = null;
-        public static ICache Cache
+        internal static ICache Cache
         {
             get
             {

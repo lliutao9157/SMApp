@@ -20,7 +20,7 @@ namespace XX.PD.Instance
         public FileResult ccc()
         {
             byte[] code = new byte[2];
-            return File(code, FileContentType.GetMimeType("png"));
+            return File(code, "");
         }
 
         public ContentResult ddd(string name)

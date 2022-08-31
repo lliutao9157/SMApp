@@ -11,15 +11,14 @@ namespace MSClient
     {
         static void Main(string[] args)
         {
-            List<AppInfo> appinfolist = ConfigHelper.ReadData("apps").ToJson().ToObject<List<AppInfo>>();
-            HttpClientServer.AppInfoList = appinfolist;
+           
             HttpClientServer.CreateHttpServer(8013);
             HttpClientServer.Start();
             HttpClientServer.OnHttpError = ex =>
             {
                 return new HttpError
                 {
-                    msg = new { code = 1, msg = ex.Message }.ToJson(),
+                    msg =ex.Message,
                     Contenttype = "application/json"
                 };
             };
@@ -52,31 +51,7 @@ namespace MSClient
                 return config;
             }
         }
-        public static void WriteData(string name, object data)
-        {
-            Hashtable ha = FileHelper.GetText(file).ToObject<Hashtable>();
-            if (ha == null) ha = new Hashtable();
-            if (!ha.ContainsKey(name))
-            {
-                ha.Add(name, data);
-                FileHelper.WriteText(file, ha.ToJson(), Encoding.UTF8);
-                return;
-            }
-            ha[name] = data;
-            FileHelper.WriteText(file, ha.ToJson(), Encoding.UTF8);
-        }
-        public static object ReadData(string name)
-        {
-            Hashtable ha = FileHelper.GetText(file).ToObject<Hashtable>();
-            if (ha == null) return null;
-            return ha[name];
-        }
-        public static void DelData(string name)
-        {
-            Hashtable ha = FileHelper.GetText(file).ToObject<Hashtable>();
-            if (ha == null) return;
-            ha.Remove(name);
-            FileHelper.WriteText(file, ha.ToJson(), Encoding.UTF8);
-        }
+       
+        
     }
 }

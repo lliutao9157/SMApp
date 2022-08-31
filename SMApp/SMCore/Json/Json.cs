@@ -10,7 +10,7 @@ namespace SMApp
     /// <summary>
     /// Json转换类
     /// </summary>
-    public static class Json
+    static class Json
     {
         public static object ToJson(this string Json)
         {
