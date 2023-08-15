@@ -1,8 +1,7 @@
-﻿namespace SMApp
+﻿namespace SMApp.MvcModels
 {
     public class ContentResult : ActionResult
     {
-
         public override string Name { get; set; } = "ContentResult";
         public string Data { get; set; }
         public ContentResult(string data)

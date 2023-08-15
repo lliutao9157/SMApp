@@ -30,6 +30,23 @@ namespace SMApp
                 return defaultValue;
             }
         }
+        public static long ToLong(this object data, long defaultValue = 0)
+        {
+            if (data == null)
+                return 0;
+            int result;
+            var success = int.TryParse(data.ToString(), out result);
+            if (success)
+                return result;
+            try
+            {
+                return Convert.ToInt64(ToDouble(data, 0));
+            }
+            catch (Exception)
+            {
+                return defaultValue;
+            }
+        }
 
         /// <summary>
         /// 转换为可空整型

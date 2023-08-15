@@ -16,6 +16,12 @@ namespace SMApp
                 return _dic;
             }
         }
+
+        public bool Containkey(string cacheKey)
+        {
+            return dic.ContainsKey(cacheKey);
+        }
+
         public T GetCache<T>(string cacheKey) where T : class
         {
             return (T)dic[cacheKey];

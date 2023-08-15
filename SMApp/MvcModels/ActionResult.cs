@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 
-namespace SMApp
+namespace SMApp.MvcModels
 {
     public abstract class ActionResult
     {
         public virtual string Name { get; set; }
-        public List<MyCookie> Cookies { get; set; }
+        public string Etag { get; set; }
     }
 }

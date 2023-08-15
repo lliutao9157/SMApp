@@ -1,41 +1,60 @@
 ﻿using System.Threading;
+using SMApp;
 
-namespace SMApp
+namespace SMApp.MvcModels
 {
     public class Controller
     {
-        public HttpRequest Request
+        public HttpContext Context
         {
             get
             {
-                var threadid = Thread.CurrentThread.ManagedThreadId.ToString();
-                return CacheFactory.Cache.GetCache<HttpRequest>("request" + threadid);
+                try
+                {
+                    var threadid = Thread.CurrentThread.ManagedThreadId.ToString();
+                    return CacheFactory.Cache.GetCache<HttpContext>("context" + threadid);
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
-        public MyCookies Cookies { get; set; } = new MyCookies();
-        private HttpRequest request { get; set; }
-
+       
+        public TimeTaskApp TimeTaskApp
+        {
+            get
+            {
+                try
+                {
+                    var threadid = Thread.CurrentThread.ManagedThreadId.ToString();
+                    return CacheFactory.Cache.GetCache<TimeTaskApp>("timetask" + threadid);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+        }
         public ContentResult Content(string content)
         {
-            return new ContentResult(content) { Cookies = Cookies.Cookies };
+            return new ContentResult(content);
         }
         public JsonResult Json(object data)
         {
-            return new JsonResult(data) { Cookies = Cookies.Cookies };
+            return new JsonResult(data);
         }
         public RedirectResult Redirect(string url)
         {
-            return new RedirectResult(url) { Cookies = Cookies.Cookies };
+            return new RedirectResult(url);
         }
         public FileResult File(byte[] data, string contenttype)
         {
             return new FileResult
             {
                 Data = data,
-                ContentType = contenttype,
-                Cookies = Cookies.Cookies
+                ContentType = contenttype
             };
         }
-
     }
 }

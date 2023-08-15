@@ -1,4 +1,4 @@
-﻿namespace SMApp
+﻿namespace SMApp.MvcModels
 {
     public class JsonResult : ActionResult
     {

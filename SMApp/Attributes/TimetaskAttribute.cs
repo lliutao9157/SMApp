@@ -6,5 +6,7 @@ namespace SMApp
     {
         public string Name { get; set; }
         public int Time { get; set; }
-    }
+        public string Content { get; set; }
+        public bool isopen { get; set; }
+     }
 }

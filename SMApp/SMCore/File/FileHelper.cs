@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 
@@ -855,6 +857,78 @@ namespace SMApp
         public static string GetText(string filePath)
         {
             return File.ReadAllText(filePath, Encoding.UTF8);
+        }
+        #endregion
+
+        public static byte[] ReadAllBytes(string path)
+        {
+            byte[] allBytes = null;
+
+            byte[] buffer = new byte[524288];
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read))
+                {
+                    int positon = 0;
+                    while ((positon = fs.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        ms.Write(buffer, 0, positon);
+                    }
+                    allBytes = ms.ToArray();
+                }
+            }
+            return allBytes;
+        }
+
+        #region 遍历当前目录及子目录
+        private static void GetDirectorys(string strPath, ref List<string> lstDirect)
+        {
+            strPath = strPath.Replace("\\", "/");
+            DirectoryInfo diFliles = new DirectoryInfo(strPath);
+            DirectoryInfo[] diArr = diFliles.GetDirectories();
+            //DirectorySecurity directorySecurity = null;
+            foreach (DirectoryInfo di in diArr)
+            {
+                try
+                {
+                    //directorySecurity = new DirectorySecurity(di.FullName, AccessControlSections.Access);
+                    //if (!directorySecurity.AreAccessRulesProtected)
+                    //{
+                    lstDirect.Add(di.FullName);
+                    GetDirectorys(di.FullName, ref lstDirect);
+                    //}
+                }
+                catch
+                {
+                    continue;
+                }
+            }
+        }
+        /// <summary>
+        /// 遍历当前目录及子目录
+        /// </summary>
+        /// <param name="strPath">文件路径</param>
+        /// <returns>所有文件</returns>
+        public static IList<FileInfo> GetFiles(string strPath)
+        {
+            List<FileInfo> lstFiles = new List<FileInfo>();
+            List<string> lstDirect = new List<string>();
+            lstDirect.Add(strPath);
+            DirectoryInfo diFliles = null;
+            GetDirectorys(strPath, ref lstDirect);
+            foreach (string str in lstDirect)
+            {
+                try
+                {
+                    diFliles = new DirectoryInfo(str);
+                    lstFiles.AddRange(diFliles.GetFiles());
+                }
+                catch
+                {
+                    continue;
+                }
+            }
+            return lstFiles;
         }
         #endregion
     }

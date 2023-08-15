@@ -57,5 +57,13 @@ namespace SMApp
 
             return subArray;
         }
+        public static T[] AppenArray<T>(this T[] array,T[] newarray)
+        {
+            if (array == null) array = new T[0];
+            T[] content = new T[array.Length + newarray.Length];
+            array.CopyTo(content, 0);
+            newarray.CopyTo(content, array.Length);
+            return content;
+        }
     }
 }

@@ -6,5 +6,4 @@ namespace SMApp
     {
         public string Name { get; set; }
     }
-
 }

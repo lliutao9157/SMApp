@@ -2,7 +2,7 @@
 {
     public class HttpError
     {
-        public string msg { get; set; }
+        public string Msg { get; set; }
         public string Contenttype { get; set; }
     }
 }

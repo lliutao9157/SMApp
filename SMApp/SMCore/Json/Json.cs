@@ -68,5 +68,9 @@ namespace SMApp
         {
             return Json == null ? JObject.Parse("{}") : JObject.Parse(Json.Replace("&nbsp;", ""));
         }
+        public static T ToClone<T>(this object obj)
+        {
+            return obj.ToJson().ToObject<T>();
+        }
     }
 }
