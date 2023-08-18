@@ -60,6 +60,7 @@ namespace SMApp
                 byte[] buffer = StreamToBytes(stream);
                 zip.Write(buffer, 0, buffer.Length);
             }
+            ms.Position = 0;
             return ms;
             //var zip = new GZipStream(stream, CompressionMode.Compress);
             //return zip;

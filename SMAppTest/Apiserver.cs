@@ -11,7 +11,6 @@ namespace SMAppTest
         {
            var server= app.GetHttpServer(8013);
         }
-
         public void DestoryApp(Smserver app)
         {
             

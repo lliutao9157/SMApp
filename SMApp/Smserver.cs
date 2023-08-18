@@ -65,8 +65,6 @@ namespace SMApp
                 return;
             }
             string url = request.Url.LocalPath;
-            HttpRequest httpRequest = e.Request;
-            HttpResponse response = e.Response;
             try
             {
                 _routedic.TryGetValue(request.HttpMethod + ":" + url.ToLower(), out routeinfo);
@@ -102,7 +100,7 @@ namespace SMApp
             res.Headers.Add("Access-Control-Allow-Headers", "*");
             res.Headers.Add("Access-Control-Expose-Headers", "*");
             res.Headers.Add("Access-Control-Allow-Credentials", "true");
-            Sendhttpmessage(e, new byte[] { });
+            Sendhttpmessage(e, new MemoryStream());
         }
         private  async void Sendhttpmessageforfile(HttpContext e, Stream m)
         {
@@ -113,71 +111,35 @@ namespace SMApp
             }
             string range = "";
             if (e.Request.Headers.AllKeys.ToList().Contains("Range")) range = e.Request.Headers["Range"].ToStr();
-            try
+            var res = e.Response;
+            res.Headers.Add("accept-ranges", "bytes");
+            res.ContentLength64 = m.Length;
+            res.KeepAlive = true;
+            if (!string.IsNullOrWhiteSpace(range))
             {
-                var res = e.Response;
-                res.Headers.Add("accept-ranges", "bytes");
-                res.ContentLength64 = m.Length;
-                res.KeepAlive = true;
-                long total = res.ContentLength64;
-                if (!string.IsNullOrWhiteSpace(range))
+                long ranges = 0;
+                long rangee = 0;
+                range = range.Replace("bytes=", "");
+                string[] rs = range.Split(new char[] { '-' });
+                ranges = rs[0].ToLong();
+                rangee = rs[1].ToLong();
+                if (rangee == 0) rangee = m.Length - 1;
+                if (ranges > 0 || rangee < m.Length - 1)
                 {
-                    long ranges = 0;
-                    long rangee = 0;
-                    range = range.Replace("bytes=", "");
-                    string[] rs = range.Split(new char[] { '-' });
-                    ranges = rs[0].ToLong();
-                    rangee = rs[1].ToLong();
-                    if (rangee == 0) rangee = m.Length - 1;
-                    if (ranges > 0 || rangee < m.Length - 1)
-                    {
-                        res.ContentLength64 = rangee - ranges + 1;
-                        total = res.ContentLength64;
-                        res.Headers.Add("Content-Range", $"bytes {ranges}-{rangee}/{m.Length}");
-                        res.StatusCode = 206;
-                        m.Position = ranges;
-                    }
-                }
-                byte[] buffer = new byte[_bufferlen];
-                var nread = 0;
-                while (true)
-                {
-                    int len = buffer.Length;
-                    if (total < len) len = total.ToInt();
-                    nread = m.Read(buffer, 0, len);
-                    if (nread <= 0)
-                    {
-                        m.Close();
-                        m.Flush();
-                        break;
-                    }
-                    await  e.Response.OutputStream.WriteAsync(buffer, 0, nread);
-                    total = total - nread;
+                    res.ContentLength64 = rangee - ranges + 1;
+                    res.Headers.Add("Content-Range", $"bytes {ranges}-{rangee}/{m.Length}");
+                    res.StatusCode = 206;
+                    m.Position = ranges;
                 }
             }
-            catch(Exception ex)
+            long total = res.ContentLength64;
+            byte[] buffer = new byte[_bufferlen];
+            while (true)
             {
-                Logger.Error(ex.Message);
-            }
-        }
-        private async void Sendhttpmessage(HttpContext e, byte[] contents)
-        {
-            lock (e)
-            {
-                if (e.Disposed) return;
-                e.Disposed = true;
-            }
-            try
-            {
-                MemoryStream m = new MemoryStream(contents);
-                var res = e.Response;
-                res.ContentLength64 = contents.LongLength;
-                res.KeepAlive = true;
-                byte[] buffer = new byte[_bufferlen];
-                var nread = 0;
-                while (true)
+                try
                 {
-                    nread = m.Read(buffer, 0, buffer.Length);
+                    if (e.Connection.Disposed) break;
+                    int nread = m.Read(buffer, 0, buffer.Length);
                     if (nread <= 0)
                     {
                         m.Close();
@@ -185,10 +147,49 @@ namespace SMApp
                         break;
                     }
                     await e.Response.OutputStream.WriteAsync(buffer, 0, nread);
+                    total = total - nread;
+                    if (total == 0) break;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex.Message);
+                    break;
                 }
             }
-            catch(Exception ex) {
-                Logger.Error(ex.Message);
+        }
+        private async void Sendhttpmessage(HttpContext e, Stream m)
+        {
+            lock (e)
+            {
+                if (e.Disposed) return;
+                e.Disposed = true;
+            }
+            var res = e.Response;
+            res.ContentLength64 = m.Length;
+            res.KeepAlive = true;
+            byte[] buffer = new byte[_bufferlen];
+            long total = res.ContentLength64;
+            while (true)
+            {
+                try
+                {
+                    if (e.Connection.Disposed) break;
+                    int nread = m.Read(buffer, 0, buffer.Length);
+                    if (nread <= 0)
+                    {
+                        m.Close();
+                        m.Flush();
+                        break;
+                    }
+                    await e.Response.OutputStream.WriteAsync(buffer, 0, nread);
+                    total = total - nread;
+                    if (total == 0) break;
+                }
+               catch(Exception ex)
+                {
+                    Logger.Error(ex.Message);
+                    break;
+                }
             }
         }
         private void Getapi(Routeinfo routeinfo, HttpContext e)
@@ -206,7 +207,6 @@ namespace SMApp
                 res.Close();
                 return;
             }
-            byte[] contents = null;
             var acceptEncoding = "";
             if (req.Headers.AllKeys.Contains("Accept-Encoding")) acceptEncoding = req.Headers["Accept-Encoding"].ToStr();
             if (req.Headers.AllKeys.Contains("Origin"))
@@ -220,20 +220,19 @@ namespace SMApp
             var zip = ZipFactory.GetZip(acceptEncoding);
             if (res.IsAbort)
             {
-                contents = res.ContentData == null ? new byte[0] : res.ContentData;
                 if (res.IsStream)
                 {
-                    Stream m = new MemoryStream(contents);
-                    Sendhttpmessageforfile(e, m);
+                    Sendhttpmessageforfile(e, res.ContentData);
                 }
                 else
                 {
+                    Stream m = res.ContentData;
                     if (zip != null)
                     {
                         res.Headers.Add("Content-Encoding", zip.Ziptype);
-                        contents = zip.Compress(contents);
+                        m = zip.Compress(m);
                     }
-                    Sendhttpmessage(e, contents);
+                    Sendhttpmessage(e, m);
                 }
                 return;
             }
@@ -253,26 +252,24 @@ namespace SMApp
             }
             if (res.IsAbort)
             {
-                contents = res.ContentData;
-                if (contents == null) contents = new byte[0];
                 if (res.IsStream)
                 {
-                    Stream m = new MemoryStream(contents);
-                    Sendhttpmessageforfile(e, m);
+                    Sendhttpmessageforfile(e, res.ContentData);
                 }
                 else
                 {
+                    Stream m= res.ContentData;
                     if (zip != null)
                     {
                         res.Headers.Add("Content-Encoding", zip.Ziptype);
-                        contents = zip.Compress(contents);
+                        m = zip.Compress(m);
                     }
-                    res.ContentLength64 = contents.Length;
-                    Sendhttpmessage(e, contents);
+                    Sendhttpmessage(e, m);
                 }
                 return;
             }
             var etag = actionresult.Etag;
+            Stream contents = res.ContentData;
             switch (actionresult.Name)
             {
                 case "JsonResult":
@@ -285,10 +282,6 @@ namespace SMApp
                         res.Headers.Add("Content-Encoding", zip.Ziptype);
                         contents = zip.Compress(res.ContentData);
                     }
-                    else
-                    {
-                        contents = res.ContentData;
-                    }
                     break;
                 case "ContentResult":
                     var contentresult = (ContentResult)actionresult;
@@ -299,10 +292,6 @@ namespace SMApp
                     {
                         res.Headers.Add("Content-Encoding", zip.Ziptype);
                         contents = zip.Compress(res.ContentData);
-                    }
-                    else
-                    {
-                        contents = res.ContentData;
                     }
                     break;
                 case "RedirectResult":
@@ -324,10 +313,6 @@ namespace SMApp
                         res.Headers.Add("Content-Encoding", zip.Ziptype);
                         contents = zip.Compress(res.ContentData);
                     }
-                    else
-                    {
-                        contents = res.ContentData;
-                    }
                     break;
                 case "ObjectResult":
                     var objectresult = (ObjectResult)actionresult;
@@ -339,17 +324,12 @@ namespace SMApp
                         res.Headers.Add("Content-Encoding", zip.Ziptype);
                         contents = zip.Compress(res.ContentData);
                     }
-                    else
-                    {
-                        contents = res.ContentData;
-                    }
                     break;
                 case "StreamResult":
                     var streamresult = (StreamResult)actionresult;
                     res.ContentType = streamresult.ContentType;
                     res.Write(streamresult.Data);
-                    Stream m = new MemoryStream(res.ContentData);
-                    Sendhttpmessageforfile(e, m);
+                    Sendhttpmessageforfile(e, contents);
                     return;
             }
             if (etag != null) res.Headers.Add("etag", etag);
@@ -362,7 +342,6 @@ namespace SMApp
             }
             if (contents != null)
             {
-
                 Sendhttpmessage(e, contents);
             }
         }
@@ -380,17 +359,14 @@ namespace SMApp
                 response.Close();
                 return;
             }
-            Stream m = null;
             var acceptEncoding = "";
             if (e.Request.Headers.AllKeys.Contains("Accept-Encoding")) acceptEncoding = e.Request.Headers["Accept-Encoding"].ToStr();
             var zip = ZipFactory.GetZip(acceptEncoding);
-
+            Stream m = response.ContentData;
             if (response.IsAbort)
             {
-                byte[] contents = response.ContentData == null ? new byte[0] : response.ContentData;
                 if (response.IsStream)
                 {
-                    m = new MemoryStream(contents);
                     Sendhttpmessageforfile(e, m);
                 }
                 else
@@ -398,27 +374,26 @@ namespace SMApp
                     if (zip != null)
                     {
                         response.Headers.Add("Content-Encoding", zip.Ziptype);
-                        contents = zip.Compress(contents);
+                        m = zip.Compress(m);
                     }
-                    response.ContentLength64 = contents.Length;
-                    Sendhttpmessage(e, contents);
+                    Sendhttpmessage(e, m);
                 }
                 return;
             }
             DateTime mtime = File.GetLastWriteTime(routeinfo.Path);
             response.ContentType = routeinfo.MimeType.Mimestr;
-            response.Write(File.ReadAllBytes(routeinfo.Path));
             if (routeinfo.MimeType.compress && zip != null)
             {
-                var newdata = zip.Compress(response.ContentData);
-                m = new MemoryStream(newdata);
+                response.Write(File.ReadAllBytes(routeinfo.Path));
+                m = zip.Compress(response.ContentData);
                 response.Headers.Add("Content-Encoding", zip.Ziptype);
             }
             else
             {
-                m = new MemoryStream(response.ContentData);
+                m=File.OpenRead(routeinfo.Path);
+                m.Position=0;
             }
-            string etag = ETagCreator.Create(new { mtime = mtime, len = response.ContentData.Length });
+            string etag = ETagCreator.Create(new { mtime = mtime, len =m.Length });
             response.Headers.Add("etag", etag);
             if (request.Headers.AllKeys.Contains("If-None-Match") && request.Headers["If-None-Match"].ToStr() == etag)
             {
@@ -438,15 +413,17 @@ namespace SMApp
                     var error = _onHttpError(ex);
                     var res = e.Response;
                     byte[] data = res.ContentEncoding.GetBytes(error.Msg);
+                    res.Write(data);
                     res.ContentType = error.Contenttype;
-                    Sendhttpmessage(e, data);
+                    Sendhttpmessage(e, res.ContentData);
                 }
                 else
                 {
                     var res = e.Response;
                     byte[] data = res.ContentEncoding.GetBytes(ex.Message);
+                    res.Write(data);
                     res.ContentType = "text/html";
-                    Sendhttpmessage(e, data);
+                    Sendhttpmessage(e, res.ContentData);
                 }
             }
             catch { }
@@ -792,8 +769,8 @@ namespace SMApp
         {
             RouteWatch route = source as RouteWatch;
             string routemethod = "";
-            string fpath = e.FullPath.Replace(route.Path, "").Replace("\\", "/");
-            routemethod += route.Route + "/" + fpath;
+            string fpath = e.FullPath.Replace("\\", "/").Replace(route.Path, "");
+            routemethod += route.Route  + fpath;
             if (e.ChangeType == WatcherChangeTypes.Created)
             {
                 FileInfo fi = new FileInfo(e.FullPath);
@@ -816,10 +793,10 @@ namespace SMApp
         private void OnRenamed(object source, RenamedEventArgs e)
         {
             RouteWatch route = source as RouteWatch;
-            string fpath = e.FullPath.Replace(route.Path, "").Replace("\\", "/");
-            string oldpath = e.OldFullPath.Replace(route.Path, "").Replace("\\", "/");
-            string routemethod = route.Route + "/" + fpath;
-            string oldroutemethod = route.Route + "/" + oldpath;
+            string fpath = e.FullPath.Replace("\\", "/").Replace(route.Path, "");
+            string oldpath = e.OldFullPath.Replace("\\", "/").Replace(route.Path, "");
+            string routemethod = route.Route  + fpath;
+            string oldroutemethod = route.Route  + oldpath;
             Routeinfo routeinfo;
             _routedic.TryRemove("GET:" + oldroutemethod.ToLower(), out routeinfo);
             FileInfo fi = new FileInfo(e.FullPath);
@@ -856,7 +833,6 @@ namespace SMApp
         }
         public void HttpServerStop()
         {
-
             foreach (var li in _fileSystemWatchers)
             {
                 li.Changed -= new FileSystemEventHandler(OnProcess);

@@ -5,6 +5,7 @@
         #region  Private Fields
         private Stream _stream;
         private bool _sendChunked;
+        private HttpContext _context;
 
 
         #endregion
@@ -12,6 +13,7 @@
         internal ResponseStream(HttpContext context)
         {
             _stream = context.NetWorkStream;
+            _context = context;
         }
         #endregion
         public override bool CanRead => false;
@@ -46,15 +48,20 @@
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            _stream.Write(buffer, offset, count);
+            try
+            {
+                _stream.Write(buffer, offset, count);
+            }
+            catch(Exception e)
+            {
+                _context.Connection.Logger.Error(e.Message);
+                _context.Connection.Close();
+            }
         }
 
         #region Internal Methods
         internal void Close(bool force)
         {
- 
-
-            
         }
         #endregion
     }

@@ -6,8 +6,8 @@
  * Copyright (c) 2012 Kaazing Corporation.
  */
 
-//var url = "ws://192.168.0.14:8015/Echo";
-var url = "ws://192.168.31.56:8013/Echo";
+var url = "ws://localhost/Echo";
+//ar url = "ws://192.168.31.56:8013/Echo";
 var output;
 var i = 1;
 

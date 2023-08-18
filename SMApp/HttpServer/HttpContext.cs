@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.Linq;
-using System.Net;
-using System.Security.Principal;
+﻿using System.Security.Principal;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace SMApp
 {
@@ -22,7 +16,7 @@ namespace SMApp
         private AuthenticationSchemes _authSchemes;
         private Func<HttpRequest, AuthenticationSchemes> _authSchemeSelector;
         private string _realm;
-        private  readonly string _defaultRealm;
+        private readonly string _defaultRealm;
         private Func<IIdentity, NetworkCredential> _userCredFinder;
         private bool _disposed;
         private string _objectName;
@@ -31,11 +25,12 @@ namespace SMApp
         #endregion
 
         #region Internal Constructors
-        internal HttpContext(HttpConnecton httpConnecton) {
+        internal HttpContext(HttpConnecton httpConnecton)
+        {
             _stream = httpConnecton.Stream;
             _httpConnecton = httpConnecton;
-            _req=new HttpRequest(this);
-            _res=new HttpResponse(this);
+            _req = new HttpRequest(this);
+            _res = new HttpResponse(this);
             _defaultRealm = "SECRET AREA";
             _disposed = false;
             _authSchemes = AuthenticationSchemes.Anonymous;
@@ -62,7 +57,7 @@ namespace SMApp
                 _authSchemes = value;
             }
         }
-        
+
         public HttpRequest Request
         {
             get
@@ -206,7 +201,7 @@ namespace SMApp
         private AuthenticationSchemes selectAuthenticationScheme()
         {
             var selector = _authSchemeSelector;
-            if (selector == null)  return AuthenticationSchemes.Anonymous;
+            if (selector == null) return AuthenticationSchemes.Anonymous;
             try
             {
                 return selector(_req);
@@ -225,7 +220,7 @@ namespace SMApp
         #endregion
 
         #region  Internal Methods
-        internal bool SetUser(AuthenticationSchemes scheme,string realm,Func<IIdentity, NetworkCredential> credentialsFinder)
+        internal bool SetUser(AuthenticationSchemes scheme, string realm, Func<IIdentity, NetworkCredential> credentialsFinder)
         {
             var user = HttpUtility.CreateUser(
                          _req.Headers["Authorization"],

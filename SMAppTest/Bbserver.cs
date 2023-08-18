@@ -27,7 +27,7 @@ namespace SMAppTest
         [WebApi(GET = true, POST = true, Action = "/")]
         public ActionResult index()
         {
-            Context.Response.Cookies.Add(new Cookie("abc", "888888"));
+            Context.Response.Cookies.Add(new Cookie("abc", "888888") {Expires=DateTime.Now.AddDays(10) });
             return Content("我们很好");
         }
     }

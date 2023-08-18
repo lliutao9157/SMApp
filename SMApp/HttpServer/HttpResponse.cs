@@ -22,6 +22,7 @@ namespace SMApp
         private string _statusDescription;
         private bool _issendheader;
         private string _reason;
+        private MemoryStream _buffer;
         #endregion
 
         #region Internal Propertes
@@ -76,6 +77,7 @@ namespace SMApp
             _version = HttpVersion.Version11;
             _issendheader = false;
             _headers = headers;
+            _buffer=new MemoryStream();
         }
         internal HttpResponse(HttpContext context) : this(context, new WebHeaderCollection(HttpHeaderType.Response, true))
         {
@@ -84,10 +86,7 @@ namespace SMApp
         #endregion
 
         #region Private Constructors
-        private HttpResponse(
-      int code, string reason, Version version, NameValueCollection headers
-    )
-      : base(version, headers)
+        private HttpResponse(int code, string reason, Version version, NameValueCollection headers): base(version, headers)
         {
             _statusCode = code;
             _reason = reason;
@@ -157,7 +156,7 @@ namespace SMApp
             get { return _keepAlive; }
             set { _keepAlive = value; }
         }
-        public byte[] ContentData { get; set; }
+        public MemoryStream ContentData => _buffer;
         public int StatusCode
         {
             get
@@ -270,11 +269,8 @@ namespace SMApp
         }
         public void Write(byte[] data)
         {
-            if (ContentData == null) ContentData = new byte[0];
-            byte[] content = new byte[ContentData.Length + data.Length];
-            ContentData.CopyTo(content, 0);
-            data.CopyTo(content, ContentData.Length);
-            ContentData = content;
+            _buffer.Write(data, 0, data.Length);
+            _buffer.Position= 0;
         }
         public void WriteStream(byte[] data)
         {
@@ -451,8 +447,6 @@ namespace SMApp
                 return _statusCode >= 200 && _statusCode <= 299;
             }
         }
-
-
         #endregion
 
         #region Internal Methods
@@ -479,7 +473,6 @@ namespace SMApp
             var headers = ret.Headers;
             headers["Upgrade"] = "websocket";
             headers["Connection"] = "Upgrade";
-            //headers.Add("Connection", "Upgrade");
             return ret;
         }
         internal static HttpResponse Parse(string[] messageHeader)

@@ -30,8 +30,7 @@ namespace SMApp
         #endregion
 
         #region Private Constructors
-        private HttpRequest(string method, string target, Version version, NameValueCollection headers) 
-            : base(version, headers)
+        private HttpRequest(string method, string target, Version version, NameValueCollection headers) : base(version, headers)
         {
             _method = method;
             _target = target;
@@ -271,106 +270,83 @@ namespace SMApp
             if (Isload) return;
             long totallen = 0;
             int bufferlen = 102400;
-            if (ContentType != null && ContentType.Contains("multipart/form-data"))
+            using (MemoryStream ms = new MemoryStream())
             {
-                try
+                if (ContentType != null && ContentType.Contains("multipart/form-data"))
                 {
-                    MultipartFormDataParser formDataParser = MultipartFormDataParser.Parse(InputStream);
-                    List<AppFile> appFiles = new List<AppFile>();
-                    Hashtable ha = new Hashtable();
-                    foreach (var file in formDataParser.Files)
+                    try
                     {
-                        var data = new byte[file.Data.Length];
-                        file.Data.Read(data, 0, data.Length);
-                        AppFile file1 = new AppFile()
+                        MultipartFormDataParser formDataParser = MultipartFormDataParser.Parse(InputStream);
+                        List<AppFile> appFiles = new List<AppFile>();
+                        Hashtable ha = new Hashtable();
+                        foreach (var file in formDataParser.Files)
                         {
-                            FileName = file.FileName,
-                            FileType = file.ContentType,
-                            Name = file.Name,
-                            FileData = data
-                        };
-                        appFiles.Add(file1);
+                            var data = new byte[file.Data.Length];
+                            file.Data.Read(data, 0, data.Length);
+                            AppFile file1 = new AppFile()
+                            {
+                                FileName = file.FileName,
+                                FileType = file.ContentType,
+                                Name = file.Name,
+                                FileData = data
+                            };
+                            appFiles.Add(file1);
+                        }
+                        foreach (var par in formDataParser.Parameters)
+                        {
+                            ha.Add(par.Name, par.Data);
+                        }
+                        if (appFiles.Count > 0) this.appFiles = appFiles;
+                        if (ha.Count > 0) appForm = ha;
+                        totallen = ContentLength64;
                     }
-                    foreach (var par in formDataParser.Parameters)
+                    catch
                     {
-                        ha.Add(par.Name, par.Data);
+                        totallen = 0;
                     }
-                    if (appFiles.Count > 0) this.appFiles = appFiles;
-                    if (ha.Count > 0) appForm = ha;
-                    totallen = ContentLength64;
                 }
-                catch
+                else if (ContentType != null && ContentType.Contains("application/json"))
                 {
-                    totallen = 0;
-                }
-            }
-            else if (ContentType != null && ContentType.Contains("application/json"))
-            {
-                var jsondata = new byte[ContentLength64];
-                var bufferdata = new byte[bufferlen];
-                var near = InputStream.Read(bufferdata, 0, bufferdata.Length);
-                var bdata = bufferdata.SubArray(0, near);
-                bdata.CopyTo(jsondata, totallen);
-                totallen += near;
-                while (totallen < ContentLength64)
-                {
-                    near = InputStream.Read(bufferdata, 0, bufferdata.Length);
-                    if (near == 0) break;
-                    bdata = bufferdata.SubArray(0, near);
-                    bdata.CopyTo(jsondata, totallen);
-                    totallen += near;
-                }
-                var jsonstr = getContentEncoding().GetString(jsondata);
-                this.jsondata = jsonstr;
-            }
-            else if (ContentType != null && ContentType.Contains("application/x-www-form-urlencoded"))
-            {
-                var formdata = new byte[ContentLength64];
-                var bufferdata = new byte[bufferlen];
-                var near = InputStream.Read(bufferdata, 0, bufferdata.Length);
-                var bdata = bufferdata.SubArray(0, near);
-                bdata.CopyTo(formdata, totallen);
-                totallen += near;
-                while (totallen < ContentLength64)
-                {
-                    near = InputStream.Read(bufferdata, 0, bufferdata.Length);
-                    if (near == 0) break;
-                    bdata = bufferdata.SubArray(0, near);
-                    bdata.CopyTo(formdata, totallen);
-                    totallen += near;
-                }
-                var formstr = getContentEncoding().GetString(formdata);
-                this.formdata = formstr;
-            }
-            else if (ContentLength64 > 0)
-            {
-                var data = new byte[ContentLength64];
-                var bufferdata = new byte[bufferlen];
-                var near = InputStream.Read(bufferdata, 0, bufferdata.Length);
-                var bdata = bufferdata.SubArray(0, near);
-                bdata.CopyTo(data, totallen);
-                totallen += near;
-                while (totallen < ContentLength64)
-                {
-                    near = InputStream.Read(bufferdata, 0, bufferdata.Length);
-                    if (near == 0) break;
-                    bdata = bufferdata.SubArray(0, near);
-                    bdata.CopyTo(data, totallen);
-                    totallen += near;
-                }
-                requestdata = data;
-            }
-            if (totallen != ContentLength64) throw new Exception("请求错误");
-            Isload = true;
-        }
 
-        public string ToString()
-        {
-            var buff = new StringBuilder(64);
-            var fmt = "{0} {1} HTTP/{2}\r\n";
-            var headers = _headers.ToString();
-            buff.AppendFormat(fmt, _httpMethod, _rawUrl, _protocolVersion).Append(headers);
-            return buff.ToString();
+                    var bufferdata = new byte[bufferlen];
+                    while (true)
+                    {
+                        var near = InputStream.Read(bufferdata, 0, bufferdata.Length);
+                        if (near == 0) break;
+                        ms.Write(bufferdata, 0, near);
+                        totallen += near;
+                    }
+                    var jsonstr = getContentEncoding().GetString(ms.ToArray().SubArray(0, ms.Length));
+                    this.jsondata = jsonstr;
+                }
+                else if (ContentType != null && ContentType.Contains("application/x-www-form-urlencoded"))
+                {
+
+                    var bufferdata = new byte[bufferlen];
+                    while (true)
+                    {
+                        var near = InputStream.Read(bufferdata, 0, bufferdata.Length);
+                        if (near == 0) break;
+                        ms.Write(bufferdata, 0, near);
+                        totallen += near;
+                    }
+                    var formstr = getContentEncoding().GetString(ms.ToArray().SubArray(0, ms.Length));
+                    this.formdata = formstr;
+                }
+                else
+                {
+                    var bufferdata = new byte[bufferlen];
+                    while (true)
+                    {
+                        var near = InputStream.Read(bufferdata, 0, bufferdata.Length);
+                        if (near == 0) break;
+                        ms.Write(bufferdata, 0, near);
+                        totallen += near;
+                    }
+                    requestdata = ms.ToArray().SubArray(0, ms.Length);
+                }
+                Isload = true;
+            }
         }
         public void SetCookies(CookieCollection cookies)
         {
@@ -396,7 +372,6 @@ namespace SMApp
 
             Headers["Cookie"] = buff.ToString();
         }
- 
         #endregion
 
         #region Internal Methods
@@ -581,7 +556,6 @@ namespace SMApp
         internal bool TryGetEncoding(string contentType, out Encoding result)
         {
             result = null;
-
             try
             {
                 result = GetEncoding(contentType);
@@ -702,7 +676,8 @@ namespace SMApp
         }
         internal void SetRequestStream(byte[] initialBuffer)
         {
-            _inputStream = new RequestStream(_context, initialBuffer, _contentLength);
+            if(_context.Request.Chunked) _inputStream=new ChunkedRequestStream(_context, initialBuffer);
+            else  _inputStream = new RequestStream(_context, initialBuffer, _contentLength);
         }
         internal void SetRequestLine(string requestLine)
         {
@@ -773,7 +748,6 @@ namespace SMApp
 
                 return;
             }
-
             _httpMethod = method;
             _rawUrl = target;
             _protocolVersion = ver;

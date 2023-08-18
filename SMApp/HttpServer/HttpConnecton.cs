@@ -1,9 +1,9 @@
-﻿using System.IO;
-using System.Net;
-using System.Net.Http;
+﻿using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
+
+
 
 namespace SMApp
 {
@@ -30,6 +30,7 @@ namespace SMApp
         private MemoryStream _requestBuffer;
         private int _position;
         private HttpContext _context;
+        private bool _disposed;
         #endregion
 
         #region Internal Properties
@@ -51,14 +52,15 @@ namespace SMApp
             _async = new object();
             _stream = CreateNetWorkStream();
             _reuses = 0;
-            _logger=server.Logger;
-            _buffer= new byte[_bufferLength];
+            _logger = server.Logger;
+            _buffer = new byte[_bufferLength];
+
         }
         #endregion
 
         #region Public Properties
         public bool Secure => _secure;
-        public IPEndPoint LocalEndPoint=> (IPEndPoint)_localEndPoint;
+        public IPEndPoint LocalEndPoint => (IPEndPoint)_localEndPoint;
         public IPEndPoint RemoteEndPoint
         {
             get
@@ -75,6 +77,7 @@ namespace SMApp
         }
         public Logger Logger => _logger;
         public int TimeOut => _timeout;
+        public bool Disposed => _disposed;
         #endregion
 
         #region Internal Methods
@@ -105,6 +108,7 @@ namespace SMApp
                 disposeStream();
                 disposeRequestBuffer();
                 closeSocket();
+                _disposed = true;
             }
         }
         #endregion
@@ -126,6 +130,7 @@ namespace SMApp
         {
             try
             {
+                if (_stream == null) return;
                 int neard = _stream.EndRead(ar);
                 if (neard <= 0)
                 {
@@ -144,9 +149,10 @@ namespace SMApp
                     _context.SendError();
                     return;
                 }
-                if (!_context.RegisterContext()) {
+                if (!_context.RegisterContext())
+                {
                     Close();
-                    return; 
+                    return;
                 }
                 if (_context.Request.IsWebSocketRequest)
                 {
@@ -246,7 +252,7 @@ namespace SMApp
             {
                 return null;
             }
-            
+
         }
         private bool processInput()
         {
@@ -328,7 +334,7 @@ namespace SMApp
             if (_context == null) return;
             lock (_context)
             {
-                if(_context.Disposed) return;
+                if (_context.Disposed) return;
                 _context.Disposed = true;
             }
             _context.SendError(408);

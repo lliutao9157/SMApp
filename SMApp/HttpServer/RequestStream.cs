@@ -14,15 +14,17 @@ namespace SMApp
         private bool _isReadinitialBuffer;
         private long _contentLength;
         private long _total;
-
+        private HttpContext _context;
         #endregion
 
         #region Internal Constructors
         internal RequestStream(HttpContext context, byte[] initialBuffer,long contentLength)
         {
+            _context = context;
             _innerStream= context.NetWorkStream;
-            _isReadinitialBuffer=false;
-            _initStream=new MemoryStream(initialBuffer);
+            if(contentLength>0) _isReadinitialBuffer=false;
+            else _isReadinitialBuffer=true;
+            _initStream =new MemoryStream(initialBuffer);
             _contentLength=contentLength;
             _total = 0;
         }

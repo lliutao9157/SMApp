@@ -1,6 +1,5 @@
 ﻿using SMApp;
 using SMApp.MvcModels;
-using System.Net;
 using System.Reflection;
 
 
@@ -20,6 +19,8 @@ namespace Simpleapp
             };
             Smserver.LoadApps(app);
             var httpserser = Smserver.CreateHttpServer(80);
+            httpserser.TimeOut = 1000000;
+            //
             //Smserver.CreateHttpServer(443, "test.pfx", "123456");
             httpserser.AuthenticationSchemeSelector = (request) =>
             {

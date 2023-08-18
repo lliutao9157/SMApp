@@ -23,8 +23,6 @@ namespace SMApp
         private AuthenticationSchemes _authSchemes;
         #endregion
 
-
-
         #region Public Constructors
 
         public HttpServer(Logger logger, int port, string certpath, string certpassword)
