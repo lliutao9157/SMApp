@@ -175,7 +175,7 @@ namespace SMApp
                     host.StartSession(ctx);
                     return;
                 }
-                if (_context.Request.ContentLength64 > 0) _context.Request.SetRequestStream(_requestBuffer.GetBuffer().SubArray(_position, _requestBuffer.Length.ToInt() - _position));
+                if (_context.Request.ContentLength64 > 0&& (_context.Request.HttpMethod=="POST"|| _context.Request.HttpMethod=="PUT")) _context.Request.SetRequestStream(_requestBuffer.GetBuffer().SubArray(_position, _requestBuffer.Length.ToInt() - _position));
                 disposeRequestBuffer();
                 _timer.Change(_timeout, Timeout.Infinite);
                 _server.HttpReceive(_context);
